@@ -8,7 +8,8 @@
 
 namespace dmlc {
 // implemmentation
-void RecordIOWriter::WriteRecord(const void *buf, size_t size) {
+uint32_t RecordIOWriter::WriteRecord(const void *buf, size_t size) {
+  uint32_t bytes_written = 0;
   CHECK(size < (1 << 29U))
       << "RecordIO only accept record less than 2^29 bytes";
   const uint32_t umagic = kMagic;
@@ -29,8 +30,10 @@ void RecordIOWriter::WriteRecord(const void *buf, size_t size) {
                                  i - dptr);
       stream_->Write(magic, 4);
       stream_->Write(&lrec, sizeof(lrec));
+      bytes_written += (4 + sizeof(lrec));
       if (i != dptr) {
         stream_->Write(bhead + dptr, i - dptr);
+        bytes_written += (i - dptr);
       }
       dptr = i + 4;
       except_counter_ += 1;
@@ -40,14 +43,18 @@ void RecordIOWriter::WriteRecord(const void *buf, size_t size) {
                              len - dptr);
   stream_->Write(magic, 4);
   stream_->Write(&lrec, sizeof(lrec));
+  bytes_written += (4 + sizeof(lrec));
   if (len != dptr) {
     stream_->Write(bhead + dptr, len - dptr);
+    bytes_written += (len - dptr);
   }
   // write padded bytes
   uint32_t zero = 0;
   if (upper_align != len) {
     stream_->Write(&zero, upper_align - len);
+    bytes_written += (upper_align - len);
   }
+  return bytes_written;
 }
 
 bool RecordIOReader::NextRecord(std::string *out_rec) {
@@ -79,6 +86,10 @@ bool RecordIOReader::NextRecord(std::string *out_rec) {
     size += sizeof(kMagic);
   }
   return true;
+}
+
+void RecordIOReader::Seek(size_t pos){
+  reinterpret_cast<SeekStream*>(stream_)->Seek(pos);
 }
 
 // helper function to find next recordio head

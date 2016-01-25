@@ -81,13 +81,13 @@ class RecordIOWriter {
    * \param buf the buffer of memory region
    * \param size the size of record to write out
    */
-  void WriteRecord(const void *buf, size_t size);
+  uint32_t WriteRecord(const void *buf, size_t size);
   /*!
    * \brief write record to the stream
    * \param data the data to write out
    */
-  inline void WriteRecord(const std::string &data) {
-    this->WriteRecord(data.c_str(), data.length());
+  inline uint32_t WriteRecord(const std::string &data) {
+    return this->WriteRecord(data.c_str(), data.length());
   }
   /*!
    * \return number of exceptions(occurance of magic number)
@@ -123,6 +123,8 @@ class RecordIOReader {
    * \return true of read was successful, false if end of stream was reached
    */
   bool NextRecord(std::string *out_rec);
+
+  void Seek(size_t pos);
 
  private:
   /*! \brief output stream */
